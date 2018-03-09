@@ -1,0 +1,30 @@
+version: '3.5'
+
+services:
+  web:
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+      args:
+        PIPENV_ARGS: --dev
+    command: python manage.py runserver --nostatic 0.0.0.0:8000
+    ports:
+      - ${PORT:-8000}:8000
+    volumes:
+      - ./:/usr/src/app:cached
+    environment:
+      PROD: '0'
+      RUN_COLLECTSTATIC: '0'
+      WDB_SOCKET_SERVER: wdb
+      WDB_NO_BROWSER_AUTO_OPEN: 'true'
+
+  wdb:
+    image: kozea/wdb-server
+    ports:
+      - 1991:1984
+
+secrets:
+  postgres-pass:
+    file: ./secrets/postgres-pass
+  django-key:
+    file: ./secrets/django-key

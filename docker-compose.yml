@@ -1,0 +1,73 @@
+version: '3.5'
+
+services:
+  web:
+    image: django_signer
+    working_dir: /usr/src/app/django_signer
+    command:
+      - gunicorn
+      - django_signer.wsgi
+      - --bind=0.0.0.0:8000
+      - --workers=${WEB_CONCURRENCY:-2}
+      - --threads=2
+      - --timeout=30
+      - --access-logfile=-
+    environment:
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres-pass
+      SECRET_KEY_FILE: /run/secrets/django-key
+      DATABASE_URL: postgres://${POSTGRES_USER:-django_signer}:POSTGRES_PASSWORD@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-django_signer}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-django_signer.local},localhost
+      BASE_DIR: /mnt
+      PROD: '1'
+      RUN_MIGRATE: '1'
+      RUN_COLLECTSTATIC: '1'
+    volumes:
+      - media:/mnt/media
+      - static:/mnt/static
+      - gpg:/mnt/gpg
+    secrets:
+      - django-key
+      - postgres-pass
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+    healthcheck:
+      # Add a the X-Forwarded-Proto header to bypass the HTTPS redirect
+      test:
+        - 'CMD'
+        - 'curl'
+        - '-fgkvLI'
+        - '--header'
+        - 'X-Forwarded-Proto: https'
+        - 'http://localhost:8000/health/'
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  postgres:
+    image: postgres:10.1-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-django_signer}
+      POSTGRES_USER: ${POSTGRES_USER:-django_signer}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres-pass
+    secrets:
+      - postgres-pass
+
+volumes:
+  postgres_data:
+  media:
+  static:
+  gpg:
+
+secrets:
+  postgres-pass:
+    external:
+      name: django_signer-${CI_ENVIRONMENT_SLUG:-production}-postgress-password-v1
+  django-key:
+    external:
+      name: django_signer-${CI_ENVIRONMENT_SLUG:-production}-django-key-v1

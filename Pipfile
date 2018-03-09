@@ -1,0 +1,29 @@
+[[source]]
+
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+
+[packages]
+
+django = "*"
+dj-database-url = "*"
+djangorestframework = "*"
+gunicorn = "*"
+"psycopg2" = "*"
+whitenoise = "*"
+djoser = "*"
+django-health-check = "*"
+python-gnupg = "*"
+django-filter = "*"
+
+
+[dev-packages]
+
+pylint = "*"
+pylint-django = "*"
+wdb = "*"
+ipython = "*"
+"autopep8" = "*"
+django-debug-toolbar = "*"
